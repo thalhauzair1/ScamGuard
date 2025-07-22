@@ -6,11 +6,6 @@
  * Branding: Uses red/yellow for severity, a warning icon, and generic scam advice.
  */
 
-// MVP NOTE:
-// This extension uses a small, curated list of trusted domains for demo purposes.
-// In a full product, we would use scalable heuristics, user customization, or a remote API
-// to reduce false positives on legitimate sites.
-
 // --- Scam Detection MVP Configuration ---
 const scamIndicators = {
   // High-risk keywords: Strong indicators of a scam
@@ -77,6 +72,15 @@ const scamIndicators = {
   ]
 };
 
+// Track user-trusted domains (using Set for O(1) lookup performance)
+let userTrustedDomains = new Set();
+
+// Load user-trusted domains from storage
+chrome.storage.local.get(['userTrustedDomains'], (result) => {
+  // Convert array from storage to Set for faster lookups
+  userTrustedDomains = new Set(result.userTrustedDomains || []);
+});
+
 /**
  * Checks if a domain is in the trusted domains list
  * @param {string} domain
@@ -86,6 +90,16 @@ function isTrustedDomain(domain) {
   return scamIndicators.trustedDomains.some(trusted => 
     domain === trusted || domain.endsWith('.' + trusted)
   );
+}
+
+/**
+ * Checks if a domain is in the user-trusted domains list
+ * @param {string} domain
+ * @returns {boolean}
+ */
+function isUserTrustedDomain(domain) {
+  // O(1) lookup using Set instead of O(n) array search
+  return userTrustedDomains.has(domain);
 }
 
 /**
@@ -202,7 +216,11 @@ function checkForFakeAntivirus() {
  */
 function checkPageContent() {
   // Skip trusted/search/educational pages
-  if (isSearchEngine(window.location.hostname) || isTrustedDomain(window.location.hostname)) return { score: 0 };
+  if (isSearchEngine(window.location.hostname) || 
+      isTrustedDomain(window.location.hostname) || 
+      isUserTrustedDomain(window.location.hostname)) {
+    return { score: 0 };
+  }
   const pageText = getVisibleText();
   if (isEducationalContent(pageText)) return { score: 0 };
   const results = {
@@ -304,9 +322,11 @@ function addWarningBanner(results) {
   warningText.innerHTML = warningMessage;
   warningContent.appendChild(warningText);
 
-  // Add close button (generic style)
+  // Add buttons
   const buttonContainer = document.createElement('div');
   buttonContainer.style.cssText = `display: flex; gap: 10px;`;
+  
+  // Close Warning button
   const closeButton = document.createElement('button');
   closeButton.textContent = 'Close Warning';
   closeButton.style.cssText = `background-color: #fff3cd; color: #cc0000; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1em; box-shadow: 0 1px 3px rgba(0,0,0,0.08);`;
@@ -314,6 +334,31 @@ function addWarningBanner(results) {
   closeButton.onmouseout = () => closeButton.style.backgroundColor = '#fff3cd';
   closeButton.onclick = () => banner.remove();
   buttonContainer.appendChild(closeButton);
+
+  // Trust This Website button
+  const trustButton = document.createElement('button');
+  trustButton.textContent = 'Trust This Website';
+  trustButton.style.cssText = `background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1em; box-shadow: 0 1px 3px rgba(0,0,0,0.08);`;
+  trustButton.onmouseover = () => trustButton.style.backgroundColor = '#218838';
+  trustButton.onmouseout = () => trustButton.style.backgroundColor = '#28a745';
+  trustButton.onclick = () => {
+    // Add current domain to user-trusted list
+    const currentDomain = window.location.hostname;
+    if (!userTrustedDomains.has(currentDomain)) {
+      userTrustedDomains.add(currentDomain);
+      // Convert Set back to array for storage (Chrome storage doesn't support Sets)
+      chrome.storage.local.set({ userTrustedDomains: Array.from(userTrustedDomains) });
+    }
+    banner.remove();
+    // Show a brief confirmation message
+    const confirmation = document.createElement('div');
+    confirmation.style.cssText = `position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 4px; z-index: 1000000; font-family: Arial, sans-serif;`;
+    confirmation.textContent = 'Website added to trusted list';
+    document.body.appendChild(confirmation);
+    setTimeout(() => confirmation.remove(), 3000);
+  };
+  buttonContainer.appendChild(trustButton);
+
   warningContent.appendChild(buttonContainer);
   banner.appendChild(warningContent);
   document.body.appendChild(banner);
