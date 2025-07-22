@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Windows Security Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .alert-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 9999;
+            width: 400px;
+        }
+        .alert-header {
+            color: #ff0000;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .alert-message {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .phone-number {
+            font-size: 24px;
+            color: #ff0000;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button {
+            background-color: #ff0000;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-box">
+        <div class="alert-header">⚠️ CRITICAL SECURITY ALERT</div>
+        <div class="alert-message">
+            Your computer has been infected with multiple viruses and malware. 
+            Your personal information and banking details are at risk!
+            <br><br>
+            Call Microsoft Support immediately at:
+        </div>
+        <div class="phone-number">1-800-123-4567</div>
+        <button class="button">CALL NOW FOR IMMEDIATE SUPPORT</button>
+    </div>
+</body>
+</html> 
